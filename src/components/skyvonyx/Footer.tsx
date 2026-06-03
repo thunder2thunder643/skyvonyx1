@@ -1,4 +1,4 @@
-import { Github, Twitter, Linkedin } from "lucide-react";
+import { Globe, Send, Share2 } from "lucide-react";
 import { Logo } from "./Logo";
 
 export function Footer() {
@@ -12,7 +12,7 @@ export function Footer() {
             Defense-grade satellite intelligence. Engineered for operators in aerospace, climate-tech and remote sensing.
           </p>
           <div className="flex gap-3 mt-5">
-            {[Github, Twitter, Linkedin].map((I, i) => (
+            {[Globe, Send, Share2].map((I, i) => (
               <a key={i} href="#" className="size-9 grid place-items-center border border-gold/25 hover:border-gold hover:bg-gold/10 transition-colors">
                 <I className="size-4 text-gold" />
               </a>
