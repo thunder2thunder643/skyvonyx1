@@ -49,7 +49,7 @@ function LabelerPage() {
   // Hydrate from server
   useEffect(() => {
     if (dq.data?.annotation?.objects && !initialLoaded.current) {
-      setObjects(dq.data.annotation.objects as AnnObject[]);
+      setObjects(dq.data.annotation.objects as unknown as AnnObject[]);
       setSavedAt(dq.data.annotation.updated_at);
       initialLoaded.current = true;
     } else if (dq.data && !dq.data.annotation && !initialLoaded.current) {
@@ -95,7 +95,7 @@ function LabelerPage() {
     mutationFn: () => infer({ data: { dataset_id: datasetId } }),
     onSuccess: (r) => {
       // Merge AI detections (replace AI-source, keep manual)
-      setObjects((prev) => [...prev.filter(o => o.source === "manual"), ...(r.objects as AnnObject[])]);
+      setObjects((prev) => [...prev.filter(o => o.source === "manual"), ...(r.objects as unknown as AnnObject[])]);
       toast.success(`AI detected ${r.count} objects${r.fallback ? " (demo mode)" : ""}`);
     },
     onError: (e: any) => toast.error(e.message),
