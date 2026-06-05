@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Logo } from "./Logo";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { label: "Platform", href: "#platform" },
@@ -9,6 +11,12 @@ const links = [
 ];
 
 export function Nav() {
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setAuthed(!!s?.user));
+    return () => sub.subscription.unsubscribe();
+  }, []);
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       <div className="mx-auto max-w-7xl px-6 py-4">
@@ -26,12 +34,12 @@ export function Nav() {
               <span className="size-1.5 rounded-full bg-gold animate-pulse-gold" />
               System Online
             </span>
-            <a
-              href="#cta"
+            <Link
+              to={authed ? "/workspace" : "/auth"}
               className="bg-gold-gradient text-primary-foreground text-xs uppercase tracking-[0.2em] font-bold px-4 py-2 rounded-sm glow-gold-sm hover:scale-[1.02] transition-transform"
             >
-              Launch
-            </a>
+              {authed ? "Open Workspace" : "Launch Console"}
+            </Link>
           </div>
         </div>
       </div>
