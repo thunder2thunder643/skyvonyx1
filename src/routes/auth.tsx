@@ -46,16 +46,51 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [lockRemaining, setLockRemaining] = useState(0);
+  const [mfa, setMfa] = useState<null | { factorId: string; challengeId: string }>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/workspace", replace: true });
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user) navigate({ to: "/workspace", replace: true });
-    });
+    async function check() {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      // If MFA is required but session is still AAL1, prompt for code.
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+        await startMfaChallenge();
+        return;
+      }
+      navigate({ to: "/workspace", replace: true });
+    }
+    check();
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, _session) => { check(); });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  async function startMfaChallenge() {
+    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const totp = factors?.totp?.find(f => f.status === "verified");
+    if (!totp) { navigate({ to: "/workspace", replace: true }); return; }
+    const { data: ch, error } = await supabase.auth.mfa.challenge({ factorId: totp.id });
+    if (error || !ch) { toast.error("Could not start MFA challenge"); return; }
+    setMfa({ factorId: totp.id, challengeId: ch.id });
+  }
+
+  async function verifyMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfa) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.mfa.verify({
+        factorId: mfa.factorId, challengeId: mfa.challengeId, code: mfaCode,
+      });
+      if (error) throw error;
+      await logAuthEvent("mfa_success", email);
+      navigate({ to: "/workspace", replace: true });
+    } catch {
+      await logAuthEvent("mfa_failed", email);
+      toast.error("Invalid code");
+    } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     const tick = () => {
@@ -125,6 +160,34 @@ function AuthPage() {
 
   const locked = lockRemaining > 0;
   const lockMins = Math.ceil(lockRemaining / 60000);
+
+  if (mfa) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 grid-bg">
+        <div className="glass-panel hud-corners rounded-md p-8 w-full max-w-md relative">
+          <Link to="/" className="flex justify-center mb-6"><Logo className="h-8" /></Link>
+          <h1 className="font-display text-2xl text-center text-gold-gradient mb-1">TWO-FACTOR REQUIRED</h1>
+          <p className="text-center text-xs uppercase tracking-[0.25em] text-muted-foreground mb-6">Enter code from your authenticator</p>
+          <form onSubmit={verifyMfa} className="space-y-4">
+            <input
+              autoFocus value={mfaCode} inputMode="numeric"
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-3 py-3 text-center font-mono tracking-[0.4em] text-lg focus:border-gold focus:outline-none"
+            />
+            <button type="submit" disabled={busy || mfaCode.length !== 6}
+              className="w-full bg-gold-gradient text-primary-foreground font-bold uppercase tracking-[0.2em] text-sm py-3 rounded-sm glow-gold-sm disabled:opacity-50">
+              {busy ? "Verifying…" : "Verify"}
+            </button>
+            <button type="button" onClick={async () => { await supabase.auth.signOut(); setMfa(null); }}
+              className="w-full text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-gold">
+              Cancel
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 grid-bg">

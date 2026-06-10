@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listDatasets, createDataset, deleteDataset } from "@/lib/datasets.functions";
 import { Logo } from "@/components/skyvonyx/Logo";
 import { toast } from "sonner";
-import { Upload, Trash2, Map, Plus, LogOut, Folder, Search } from "lucide-react";
+import { Upload, Trash2, Map, Plus, LogOut, Folder, Search, Shield } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({ meta: [{ title: "Workspace — Skyvonyx" }] }),
@@ -87,6 +87,7 @@ function WorkspacePage() {
           <Link to="/" className="flex items-center gap-3"><Logo className="h-6" /></Link>
           <nav className="flex items-center gap-6 text-xs uppercase tracking-[0.2em] text-muted-foreground">
             <span className="text-gold">Datasets</span>
+            <Link to="/security" className="hover:text-gold flex items-center gap-1.5"><Shield className="size-3.5" /> Security</Link>
             <button onClick={signOut} className="hover:text-gold flex items-center gap-1.5"><LogOut className="size-3.5" /> Sign out</button>
           </nav>
         </div>
