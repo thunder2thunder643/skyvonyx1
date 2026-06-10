@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWorkspaceRouteImport } from './routes/_authenticated/workspace'
+import { Route as AuthenticatedSecurityRouteImport } from './routes/_authenticated/security'
 import { Route as AuthenticatedWorkspaceDatasetIdRouteImport } from './routes/_authenticated/workspace.$datasetId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -40,6 +41,11 @@ const AuthenticatedWorkspaceRoute = AuthenticatedWorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSecurityRoute = AuthenticatedSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWorkspaceDatasetIdRoute =
   AuthenticatedWorkspaceDatasetIdRouteImport.update({
     id: '/$datasetId',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/security': typeof AuthenticatedSecurityRoute
   '/workspace': typeof AuthenticatedWorkspaceRouteWithChildren
   '/workspace/$datasetId': typeof AuthenticatedWorkspaceDatasetIdRoute
 }
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/security': typeof AuthenticatedSecurityRoute
   '/workspace': typeof AuthenticatedWorkspaceRouteWithChildren
   '/workspace/$datasetId': typeof AuthenticatedWorkspaceDatasetIdRoute
 }
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/security': typeof AuthenticatedSecurityRoute
   '/_authenticated/workspace': typeof AuthenticatedWorkspaceRouteWithChildren
   '/_authenticated/workspace/$datasetId': typeof AuthenticatedWorkspaceDatasetIdRoute
 }
@@ -76,16 +85,24 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/security'
     | '/workspace'
     | '/workspace/$datasetId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/reset-password' | '/workspace' | '/workspace/$datasetId'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/security'
+    | '/workspace'
+    | '/workspace/$datasetId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
+    | '/_authenticated/security'
     | '/_authenticated/workspace'
     | '/_authenticated/workspace/$datasetId'
   fileRoutesById: FileRoutesById
@@ -134,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/security': {
+      id: '/_authenticated/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof AuthenticatedSecurityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/workspace/$datasetId': {
       id: '/_authenticated/workspace/$datasetId'
       path: '/$datasetId'
@@ -159,10 +183,12 @@ const AuthenticatedWorkspaceRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSecurityRoute: typeof AuthenticatedSecurityRoute
   AuthenticatedWorkspaceRoute: typeof AuthenticatedWorkspaceRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSecurityRoute: AuthenticatedSecurityRoute,
   AuthenticatedWorkspaceRoute: AuthenticatedWorkspaceRouteWithChildren,
 }
 
