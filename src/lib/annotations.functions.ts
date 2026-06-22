@@ -101,7 +101,7 @@ export const runInference = createServerFn({ method: "POST" })
           dataset_id: data.dataset_id,
           owner_id: userId,
           objects,
-          inference_raw: raw,
+          inference_raw: raw as any,
           inference_run_at: new Date().toISOString(),
         },
         { onConflict: "dataset_id" },
