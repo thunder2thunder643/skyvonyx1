@@ -59,42 +59,16 @@ export const runInference = createServerFn({ method: "POST" })
       .from("satellite-images").createSignedUrl(ds.storage_path, 60 * 10);
     if (!signed?.signedUrl) throw new Error("Could not access image");
 
-    const apiKey = process.env.ROBOFLOW_API_KEY;
-    const workspace = process.env.ROBOFLOW_WORKSPACE;
-    const workflowId = process.env.ROBOFLOW_WORKFLOW_ID;
-    if (!apiKey || !workspace || !workflowId) {
-      throw new Error("Roboflow credentials not configured");
-    }
-
-    const url = `https://serverless.roboflow.com/infer/workflows/${workspace}/${workflowId}`;
-    let raw: any = null;
+    const { runRoboflowWorkflow } = await import("./roboflow.server");
+    let raw: unknown = null;
     let predictions: any[] = [];
+    let fallback = false;
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: apiKey,
-          inputs: { image: { type: "url", value: signed.signedUrl } },
-        }),
-      });
-      raw = await res.json();
-      if (!res.ok) throw new Error(raw?.message || `Roboflow ${res.status}`);
-      // Walk the workflow output to extract predictions
-      const outputs = raw?.outputs?.[0] ?? raw?.outputs ?? raw;
-      const findPreds = (node: any): any[] => {
-        if (!node || typeof node !== "object") return [];
-        if (Array.isArray(node?.predictions)) return node.predictions;
-        for (const v of Object.values(node)) {
-          const found = findPreds(v);
-          if (found.length) return found;
-        }
-        return [];
-      };
-      predictions = findPreds(outputs);
+      const result = await runRoboflowWorkflow({ imageUrl: signed.signedUrl });
+      predictions = result.predictions;
+      raw = result.raw;
     } catch (e: any) {
-      console.error("Roboflow inference failed:", e);
-      // Fallback to demo detections so the workflow stays usable
+      console.error("Roboflow inference failed:", e?.message ?? e);
       const w = ds.width ?? 1024, h = ds.height ?? 1024;
       predictions = [
         { class: "building", confidence: 0.92, x: w * 0.3, y: h * 0.35, width: w * 0.18, height: h * 0.22 },
@@ -102,7 +76,8 @@ export const runInference = createServerFn({ method: "POST" })
         { class: "vehicle", confidence: 0.74, x: w * 0.55, y: h * 0.7, width: w * 0.06, height: h * 0.05 },
         { class: "forest", confidence: 0.88, x: w * 0.15, y: h * 0.78, width: w * 0.25, height: h * 0.2 },
       ];
-      raw = { fallback: true, error: e?.message };
+      raw = { fallback: true, error: e?.message ?? String(e) };
+      fallback = true;
     }
 
     const objects = predictions.map((p: any, i: number) => {
@@ -126,7 +101,7 @@ export const runInference = createServerFn({ method: "POST" })
           dataset_id: data.dataset_id,
           owner_id: userId,
           objects,
-          inference_raw: raw,
+          inference_raw: raw as any,
           inference_run_at: new Date().toISOString(),
         },
         { onConflict: "dataset_id" },
@@ -134,5 +109,5 @@ export const runInference = createServerFn({ method: "POST" })
       .select()
       .single();
     if (upErr) throw new Error(upErr.message);
-    return { objects, count: objects.length, fallback: !!raw?.fallback };
+    return { objects, count: objects.length, fallback };
   });
