@@ -48,6 +48,7 @@ function AuthPage() {
   const [lockRemaining, setLockRemaining] = useState(0);
   const [mfa, setMfa] = useState<null | { factorId: string; challengeId: string }>(null);
   const [mfaCode, setMfaCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     async function check() {
@@ -169,8 +170,12 @@ function AuthPage() {
           <h1 className="font-display text-2xl text-center text-gold-gradient mb-1">TWO-FACTOR REQUIRED</h1>
           <p className="text-center text-xs uppercase tracking-[0.25em] text-muted-foreground mb-6">Enter code from your authenticator</p>
           <form onSubmit={verifyMfa} className="space-y-4">
+            <p className="text-center text-xs text-muted-foreground">
+              Open your authenticator app and enter the 6-digit code for Skyvonyx.
+            </p>
             <input
-              autoFocus value={mfaCode} inputMode="numeric"
+              autoFocus value={mfaCode} inputMode="numeric" autoComplete="one-time-code"
+              aria-label="Six-digit authentication code"
               onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="000000"
               className="w-full bg-secondary/40 border border-border rounded-sm px-3 py-3 text-center font-mono tracking-[0.4em] text-lg focus:border-gold focus:outline-none"
@@ -201,17 +206,40 @@ function AuthPage() {
           Geospatial Intelligence System
         </p>
         {locked && (
-          <div className="mb-4 text-center text-xs uppercase tracking-[0.2em] text-destructive">
-            Locked — retry in ~{lockMins} min
+          <div role="alert" className="mb-4 text-center text-xs uppercase tracking-[0.2em] text-destructive">
+            Too many attempts — try again in ~{lockMins} min
           </div>
         )}
         <form onSubmit={submit} className="space-y-4">
           {mode === "signup" && (
-            <Field label="Operator Name" value={name} onChange={setName} />
+            <Field label="Operator Name" value={name} onChange={setName} autoComplete="name" />
           )}
-          <Field label="Email" type="email" value={email} onChange={setEmail} required />
+          <Field label="Email" type="email" value={email} onChange={setEmail} required autoComplete="email" />
           {mode !== "forgot" && (
-            <Field label="Password" type="password" value={password} onChange={setPassword} required />
+            <Field
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={setPassword}
+              required
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              hint={mode === "signup" ? "Use at least 8 characters." : undefined}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-gold px-2"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              }
+            />
+          )}
+          {mode === "forgot" && (
+            <p className="text-xs text-muted-foreground -mt-1">
+              We'll email you a secure link to set a new password.
+            </p>
           )}
           <button
             type="submit"
@@ -250,19 +278,25 @@ function AuthPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", required }: {
+function Field({ label, value, onChange, type = "text", required, autoComplete, hint, trailing }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean;
+  autoComplete?: string; hint?: string; trailing?: React.ReactNode;
 }) {
   return (
     <label className="block">
       <span className="block text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1.5">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        className="w-full bg-secondary/40 border border-border rounded-sm px-3 py-2.5 text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
-      />
+      <div className="relative flex items-center">
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          autoComplete={autoComplete}
+          className="w-full bg-secondary/40 border border-border rounded-sm px-3 py-2.5 pr-16 text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
+        />
+        {trailing && <div className="absolute right-1">{trailing}</div>}
+      </div>
+      {hint && <span className="block mt-1 text-[10px] text-muted-foreground">{hint}</span>}
     </label>
   );
 }

@@ -156,7 +156,11 @@ function LabelerPage() {
         </div>
         <div className="flex items-center gap-3">
           <SaveIndicator state={savingState} savedAt={savedAt} />
-          <button onClick={() => inferMutation.mutate()} disabled={inferMutation.isPending}
+          <button
+            onClick={() => inferMutation.mutate()}
+            disabled={inferMutation.isPending}
+            title="Run AI detection on this scene"
+            aria-label="Run AI detection"
             className="bg-gold-gradient text-primary-foreground font-bold uppercase tracking-[0.2em] text-xs px-3.5 py-2 rounded-sm glow-gold-sm flex items-center gap-2 disabled:opacity-60">
             <Sparkles className="size-4" /> {inferMutation.isPending ? "Inferring…" : "Run AI"}
           </button>
@@ -164,12 +168,24 @@ function LabelerPage() {
       </header>
 
       <div className="flex-1 flex min-h-0">
+        {/* Mobile / narrow viewport notice */}
+        <div className="md:hidden absolute inset-x-0 top-14 z-40 bg-background/90 border-b border-gold/20 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground text-center">
+          Labeler works best on a larger screen.
+        </div>
         {/* Left sidebar */}
-        <aside className="w-64 border-r border-border/60 bg-card/40 backdrop-blur-md flex flex-col">
+        <aside className="w-64 border-r border-border/60 bg-card/40 backdrop-blur-md flex-col hidden lg:flex" aria-label="Classes and layers">
           <SidebarSection title="Classes">
-            {labels.length === 0 && <div className="text-xs text-muted-foreground italic">No detections yet</div>}
+            {labels.length === 0 && (
+              <div className="text-xs text-muted-foreground italic">
+                No labels yet. Draw a box, or click <span className="text-gold">Run AI</span>.
+              </div>
+            )}
             {labels.map(l => (
-              <button key={l.label} onClick={() => toggleLabel(l.label)}
+              <button
+                key={l.label}
+                onClick={() => toggleLabel(l.label)}
+                title={hiddenLabels.has(l.label) ? `Show ${l.label}` : `Hide ${l.label}`}
+                aria-pressed={!hiddenLabels.has(l.label)}
                 className="w-full flex items-center justify-between px-2 py-1.5 rounded-sm hover:bg-secondary/50 group">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="size-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
@@ -197,11 +213,13 @@ function LabelerPage() {
         {/* Center: canvas + tools */}
         <div className="flex-1 flex flex-col min-w-0">
           <div className="h-12 border-b border-border/60 bg-card/30 flex items-center gap-1 px-3 shrink-0">
-            <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={<MousePointer2 className="size-4" />} label="Select" hint="V" />
-            <ToolButton active={tool === "bbox"} onClick={() => setTool("bbox")} icon={<Square className="size-4" />} label="BBox" hint="B" />
-            <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={<Hand className="size-4" />} label="Pan" hint="H" />
+            <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={<MousePointer2 className="size-4" />} label="Select" hint="V" title="Select objects (V)" />
+            <ToolButton active={tool === "bbox"} onClick={() => setTool("bbox")} icon={<Square className="size-4" />} label="BBox" hint="B" title="Draw bounding box (B)" />
+            <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={<Hand className="size-4" />} label="Pan" hint="H" title="Pan the canvas (H)" />
             <div className="mx-2 h-6 w-px bg-border" />
             <button onClick={() => setShowOverlays(s => !s)}
+              title={showOverlays ? "Hide all overlays" : "Show all overlays"}
+              aria-pressed={showOverlays}
               className="px-2.5 py-1.5 text-xs uppercase tracking-wider rounded-sm hover:bg-secondary/60 flex items-center gap-1.5">
               <Layers className="size-3.5" /> Overlays
             </button>
@@ -220,18 +238,28 @@ function LabelerPage() {
               visibleLabels={visibleLabels}
               showOverlays={showOverlays}
             />
+            {objects.length === 0 && !inferMutation.isPending && (
+              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-6 max-w-md text-center text-xs text-muted-foreground bg-background/70 backdrop-blur-sm border border-border rounded-sm px-4 py-2">
+                Pick <span className="text-gold">BBox</span> and drag on the image to label, or hit <span className="text-gold">Run AI</span> to auto-detect.
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right sidebar */}
-        <aside className="w-72 border-l border-border/60 bg-card/40 backdrop-blur-md flex flex-col">
+        <aside className="w-72 border-l border-border/60 bg-card/40 backdrop-blur-md flex-col hidden lg:flex" aria-label="Selection and export">
           <SidebarSection title="Selection">
-            {!selected && <div className="text-xs text-muted-foreground italic">Select an object to edit</div>}
+            {!selected && (
+              <div className="text-xs text-muted-foreground italic">
+                Click an object on the canvas to edit its label or delete it.
+              </div>
+            )}
             {selected && (
               <div className="space-y-3">
                 <FieldRow label="Label">
                   <input
                     value={selected.label}
+                    aria-label="Object label"
                     onChange={(e) => {
                       const v = e.target.value;
                       setObjects(prev => prev.map(o => o.id === selected.id ? { ...o, label: v, color: colorFor(v) } : o));
@@ -266,6 +294,8 @@ function LabelerPage() {
                     setObjects(p => p.filter(o => o.id !== selected.id));
                     setSelectedId(null);
                   }}
+                  aria-label="Delete selected object"
+                  title="Delete selected object (Del)"
                   className="w-full text-xs uppercase tracking-wider bg-destructive/20 hover:bg-destructive/30 text-destructive rounded-sm py-1.5 flex items-center justify-center gap-1.5">
                   <Trash2 className="size-3.5" /> Delete
                 </button>
@@ -274,10 +304,10 @@ function LabelerPage() {
           </SidebarSection>
 
           <SidebarSection title="Export">
-            <button onClick={exportJSON} className="w-full text-xs uppercase tracking-wider bg-secondary hover:bg-secondary/70 rounded-sm py-2 flex items-center justify-center gap-2">
+            <button onClick={exportJSON} title="Download annotations as JSON" className="w-full text-xs uppercase tracking-wider bg-secondary hover:bg-secondary/70 rounded-sm py-2 flex items-center justify-center gap-2">
               <Download className="size-3.5" /> JSON
             </button>
-            <button onClick={exportCOCO} className="w-full text-xs uppercase tracking-wider bg-secondary hover:bg-secondary/70 rounded-sm py-2 flex items-center justify-center gap-2">
+            <button onClick={exportCOCO} title="Download annotations in COCO format" className="w-full text-xs uppercase tracking-wider bg-secondary hover:bg-secondary/70 rounded-sm py-2 flex items-center justify-center gap-2">
               <Download className="size-3.5" /> COCO
             </button>
           </SidebarSection>
@@ -300,9 +330,12 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
   );
 }
 
-function ToolButton({ active, onClick, icon, label, hint }: any) {
+function ToolButton({ active, onClick, icon, label, hint, title }: any) {
   return (
     <button onClick={onClick}
+      title={title}
+      aria-label={title || label}
+      aria-pressed={active}
       className={`px-2.5 py-1.5 text-xs uppercase tracking-wider rounded-sm flex items-center gap-1.5 transition-colors ${active ? "bg-gold-gradient text-primary-foreground" : "hover:bg-secondary/60"}`}>
       {icon} {label} <span className="opacity-60 text-[10px]">{hint}</span>
     </button>
