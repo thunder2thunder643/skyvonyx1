@@ -14,7 +14,7 @@ export function Hero() {
       </div>
 
       {/* Radar sweep */}
-      <div className="pointer-events-none absolute -right-40 top-20 size-[600px] rounded-full border border-gold/10">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-20 size-[600px] rounded-full border border-gold/10">
         <div className="absolute inset-8 rounded-full border border-gold/10" />
         <div className="absolute inset-20 rounded-full border border-gold/10" />
         <div className="absolute inset-0 animate-radar" style={{
@@ -57,11 +57,11 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5 }}
             id="cta" className="mt-10 flex flex-wrap gap-4"
           >
-            <a href="#dashboard" className="group bg-gold-gradient text-primary-foreground font-bold uppercase tracking-[0.2em] text-sm px-7 py-4 rounded-sm glow-gold inline-flex items-center gap-2 hover:scale-[1.02] transition-transform">
+            <a href="#dashboard" aria-label="Launch the Skyvonyx platform dashboard" className="group bg-gold-gradient text-primary-foreground font-bold uppercase tracking-[0.2em] text-sm px-7 py-4 rounded-sm glow-gold inline-flex items-center gap-2 hover:scale-[1.02] transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">
               Launch Platform
               <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
             </a>
-            <a href="#detection" className="border border-gold/40 text-gold uppercase tracking-[0.2em] text-sm font-bold px-7 py-4 rounded-sm hover:bg-gold/10 transition-colors">
+            <a href="#detection" aria-label="See AI detection demo" className="border border-gold/40 text-gold uppercase tracking-[0.2em] text-sm font-bold px-7 py-4 rounded-sm hover:bg-gold/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">
               Request Demo
             </a>
           </motion.div>
